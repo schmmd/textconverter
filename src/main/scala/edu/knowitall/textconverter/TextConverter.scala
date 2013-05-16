@@ -66,7 +66,7 @@ object SentenceSplitter extends App {
               if (lines.hasNext) lines.next
 
 	          val sentences = sentencer(segment.mkString(" "))
-	          sentences.iterator.map(_.text) foreach writer.println
+	          sentences.iterator.map(_.text).filter(sentenceFilter) foreach writer.println
             }
 
 	        println("Written to: " + outputFile)
