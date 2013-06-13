@@ -44,8 +44,9 @@ object TextConverter extends App {
 
     for (inputFile <- inputFiles.asScala) {
       println("Processing: " + inputFile)
+      val subdirectory = inputFile.getPath.drop(config.inputFile.getPath.size)
       val outputFileName = inputFile.getName() + ".txt"
-      val outputFile = new File(config.outputFile, outputFileName)
+      val outputFile = new File(new File(config.outputFile, subdirectory), outputFileName)
 
       if (!outputFile.exists()) {
         Resource.using(new PrintWriter(outputFile, "UTF-8")) { writer =>
