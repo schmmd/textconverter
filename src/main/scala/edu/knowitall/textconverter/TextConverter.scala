@@ -53,8 +53,13 @@ object SentenceSplitter extends App {
 
     for (inputFile <- inputFiles.asScala) {
       println("Processing: " + inputFile)
+
+      val subdirectory = inputFile.getParentFile.getPath.drop(config.inputFile.getPath.size)
+      val outputDir = new File(config.outputFile, subdirectory)
+      outputDir.mkdirs()
+
       val outputFileName = inputFile.getName() + ".sentences"
-      val outputFile = new File(config.outputFile, outputFileName)
+      val outputFile = new File(outputDir, outputFileName)
 
       if (!outputFile.exists()) {
         Resource.using(Source.fromFile(inputFile, "UTF-8")) { source =>

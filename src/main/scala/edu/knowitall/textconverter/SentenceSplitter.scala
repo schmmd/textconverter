@@ -18,7 +18,7 @@ object TextConverter extends App {
   case class Config(
     inputFile: File = null,
     outputFile: File = null,
-    exts: Array[String] = Array("txt", "htm", "html", "shtml", "doc", "pdf", "ppt", "docx"))
+    exts: Array[String] = Array("txt", "xml", "htm", "html", "shtml", "doc", "pdf", "ppt", "docx"))
 
   val parser = new immutable.OptionParser[Config]("textconverter") {
     def options = Seq(
@@ -44,9 +44,13 @@ object TextConverter extends App {
 
     for (inputFile <- inputFiles.asScala) {
       println("Processing: " + inputFile)
-      val subdirectory = inputFile.getPath.drop(config.inputFile.getPath.size)
+
+      val subdirectory = inputFile.getParentFile.getPath.drop(config.inputFile.getPath.size)
+      val outputDir = new File(config.outputFile, subdirectory)
+      outputDir.mkdirs()
+
       val outputFileName = inputFile.getName() + ".txt"
-      val outputFile = new File(new File(config.outputFile, subdirectory), outputFileName)
+      val outputFile = new File(outputDir, outputFileName)
 
       if (!outputFile.exists()) {
         Resource.using(new PrintWriter(outputFile, "UTF-8")) { writer =>
