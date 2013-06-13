@@ -43,6 +43,10 @@ object SentenceSplitter extends App {
     sentence.length > 5 && terminatingCharacters(sentence.last) && sentence.length < 400
   }
 
+  def sentenceMap(sentence: String) = {
+    sentence.trim.replaceAll("\t", " ")
+  }
+
   def run(config: Config) {
     val sentencer = new OpenNlpSentencer()
     val inputFiles = FileUtils.listFiles(config.inputFile, Array("txt"), true)
@@ -66,7 +70,7 @@ object SentenceSplitter extends App {
               if (lines.hasNext) lines.next
 
 	          val sentences = sentencer(segment.mkString(" "))
-	          sentences.iterator.map(_.text).filter(sentenceFilter) foreach writer.println
+	          sentences.iterator.map(_.text).map(sentenceMap).filter(sentenceFilter) foreach writer.println
             }
 
 	        println("Written to: " + outputFile)
