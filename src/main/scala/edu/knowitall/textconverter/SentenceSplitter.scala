@@ -13,12 +13,12 @@ import org.apache.tika.exception.TikaException
 import scala.util.Try
 import scala.util.Success
 import scala.util.Failure
+import edu.knowitall.tool.sentence.OpenNlpSentencer
 
-object TextConverter extends App {
+object SentenceSplitter extends App {
   case class Config(
     inputFile: File = null,
-    outputFile: File = null,
-    exts: Array[String] = Array("txt", "xml", "htm", "html", "shtml", "doc", "pdf", "ppt", "docx"))
+    outputFile: File = null)
 
   val parser = new immutable.OptionParser[Config]("textconverter") {
     def options = Seq(
@@ -38,9 +38,18 @@ object TextConverter extends App {
     case None =>
   }
 
+  def sentenceFilter(sentence: String) = {
+    val terminatingCharacters = Set('.', '?', '!')
+    sentence.length > 5 && terminatingCharacters(sentence.last) && sentence.length < 400
+  }
+
+  def sentenceMap(sentence: String) = {
+    sentence.trim.replaceAll("\t", " ")
+  }
+
   def run(config: Config) {
-    val tika = new Tika()
-    val inputFiles = FileUtils.listFiles(config.inputFile, config.exts ++ config.exts.map(_.toUpperCase), true)
+    val sentencer = new OpenNlpSentencer()
+    val inputFiles = FileUtils.listFiles(config.inputFile, Array("txt"), true)
 
     for (inputFile <- inputFiles.asScala) {
       println("Processing: " + inputFile)
@@ -49,15 +58,27 @@ object TextConverter extends App {
       val outputDir = new File(config.outputFile, subdirectory)
       outputDir.mkdirs()
 
-      val outputFileName = inputFile.getName() + ".txt"
+      val outputFileName = inputFile.getName() + ".sentences"
       val outputFile = new File(outputDir, outputFileName)
 
       if (!outputFile.exists()) {
-        Resource.using(new PrintWriter(outputFile, "UTF-8")) { writer =>
-          val text = Try(tika.parseToString(inputFile))
-          text match {
-            case Success(text) => writer.print(text); println("Written to: " + outputFile)
-            case Failure(ex) => ex.printStackTrace()
+        Resource.using(Source.fromFile(inputFile, "UTF-8")) { source =>
+          val lines = source.getLines.buffered
+          Resource.using(new PrintWriter(outputFile, "UTF-8")) { writer =>
+            while (lines.hasNext) {
+              var segment: Vector[String] = Vector.empty
+              while (lines.hasNext && !lines.head.trim.isEmpty) {
+                segment = segment :+ lines.next
+              }
+
+              // skip over whitespace line
+              if (lines.hasNext) lines.next
+
+	          val sentences = sentencer(segment.mkString(" "))
+	          sentences.iterator.map(_.text).map(sentenceMap).filter(sentenceFilter) foreach writer.println
+            }
+
+	        println("Written to: " + outputFile)
           }
         }
       }
